@@ -30,7 +30,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { toast } from "sonner"
 
@@ -338,7 +338,7 @@ export default function VentasPage() {
     }
   }
 
-    const handleViewDetails = async (sale: Sale) => {
+  const handleViewDetails = async (sale: Sale) => {
     setSelectedSale(sale)
     setIsDetailOpen(true)
     // Obtener items de la factura
@@ -580,10 +580,10 @@ export default function VentasPage() {
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">
-                              {new Date(sale.created_at || sale.invoice_date).toLocaleTimeString('es-PE', { 
-                                hour: '2-digit', 
+                              {new Date(sale.created_at || sale.invoice_date).toLocaleTimeString('es-PE', {
+                                hour: '2-digit',
                                 minute: '2-digit',
-                                hour12: true 
+                                hour12: true
                               })}
                             </div>
                             <div className="text-xs text-gray-500">
@@ -665,76 +665,76 @@ export default function VentasPage() {
           </Tabs>
         </main>
 
-            {/* Detalles de la venta */}
-            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Detalles de la Venta</DialogTitle>
-                  <DialogDescription>Información completa de la venta seleccionada</DialogDescription>
-                </DialogHeader>
+        {/* Detalles de la venta */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalles de la Venta</DialogTitle>
+              <DialogDescription>Información completa de la venta seleccionada</DialogDescription>
+            </DialogHeader>
 
-                {selectedSale && (
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-medium">Factura #{selectedSale.invoice_number}</p>
-                      <p className="text-sm text-gray-600">{new Date(selectedSale.invoice_date).toLocaleDateString("es-ES")}</p>
-                    </div>
+            {selectedSale && (
+              <div className="space-y-4">
+                <div>
+                  <p className="font-medium">Factura #{selectedSale.invoice_number}</p>
+                  <p className="text-sm text-gray-600">{new Date(selectedSale.invoice_date).toLocaleDateString("es-ES")}</p>
+                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="font-semibold mb-2">Cliente</h3>
-                        {selectedSale.owners ? (
-                          <>
-                            <p>{selectedSale.owners.first_name} {selectedSale.owners.last_name}</p>
-                            {selectedSale.owners.email && <p className="text-sm text-gray-600">{selectedSale.owners.email}</p>}
-                            {selectedSale.owners.phone && <p className="text-sm text-gray-600">{selectedSale.owners.phone}</p>}
-                          </>
-                        ) : (
-                          <p className="italic">Cliente eliminado</p>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-2">Pago</h3>
-                        <p>Método: {selectedSale.payment_method || "No especificado"}</p>
-                        <p>Estado: {getStatusText(selectedSale.payment_status)}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold mb-2">Artículos</h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Producto</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Precio Unit.</TableHead>
-                            <TableHead>Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {saleItems.map((item) => (
-                            <TableRow key={item.id as any}>
-                              <TableCell>{(item as any).products?.name}</TableCell>
-                              <TableCell>{(item as any).products?.category}</TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>${(item.unit_price ?? item.products?.price ?? 0).toFixed(2)}</TableCell>
-                              <TableCell>${(item.total_price ?? ((item.products?.price ?? 0) * item.quantity)).toFixed(2)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    <div className="text-right space-y-1">
-                      <p>Subtotal: ${selectedSale.subtotal.toFixed(2)}</p>
-                      <p>Impuesto: ${selectedSale.tax_amount.toFixed(2)}</p>
-                      <p className="font-semibold">Total: ${selectedSale.total_amount.toFixed(2)}</p>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Cliente</h3>
+                    {selectedSale.owners ? (
+                      <>
+                        <p>{selectedSale.owners.first_name} {selectedSale.owners.last_name}</p>
+                        {selectedSale.owners.email && <p className="text-sm text-gray-600">{selectedSale.owners.email}</p>}
+                        {selectedSale.owners.phone && <p className="text-sm text-gray-600">{selectedSale.owners.phone}</p>}
+                      </>
+                    ) : (
+                      <p className="italic">Cliente eliminado</p>
+                    )}
                   </div>
-                )}
-              </DialogContent>
-            </Dialog>
+                  <div>
+                    <h3 className="font-semibold mb-2">Pago</h3>
+                    <p>Método: {selectedSale.payment_method || "No especificado"}</p>
+                    <p>Estado: {getStatusText(selectedSale.payment_status)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">Artículos</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Categoría</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Precio Unit.</TableHead>
+                        <TableHead>Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {saleItems.map((item) => (
+                        <TableRow key={item.id as any}>
+                          <TableCell>{(item as any).products?.name}</TableCell>
+                          <TableCell>{(item as any).products?.category}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>${(item.unit_price ?? item.products?.price ?? 0).toFixed(2)}</TableCell>
+                          <TableCell>${(item.total_price ?? ((item.products?.price ?? 0) * item.quantity)).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="text-right space-y-1">
+                  <p>Subtotal: ${selectedSale.subtotal.toFixed(2)}</p>
+                  <p>Impuesto: ${selectedSale.tax_amount.toFixed(2)}</p>
+                  <p className="font-semibold">Total: ${selectedSale.total_amount.toFixed(2)}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from './db';
 import { Supplier } from '@/types/supplier';
 
 export const getSuppliers = async (): Promise<Supplier[]> => {
@@ -18,7 +18,7 @@ export const getSuppliers = async (): Promise<Supplier[]> => {
 export const createSupplier = async (supplierData: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>): Promise<Supplier> => {
   try {
     console.log('Creating supplier with data:', JSON.stringify(supplierData, null, 2));
-    
+
     // Asegurarse de que los campos opcionales sean null en lugar de undefined
     const dataToInsert = {
       name: supplierData.name,
@@ -30,9 +30,9 @@ export const createSupplier = async (supplierData: Omit<Supplier, 'id' | 'create
       notes: supplierData.notes || null,
       active: true
     };
-    
+
     console.log('Data to insert:', JSON.stringify(dataToInsert, null, 2));
-    
+
     const { data, error } = await supabase
       .from('suppliers')
       .insert([dataToInsert])

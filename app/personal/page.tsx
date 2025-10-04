@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { UserCheck, Plus, Search, Edit, Trash2, AlertCircle } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 
 interface Usuario {
@@ -48,8 +48,8 @@ export default function PersonalPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [userToDelete, setUserToDelete] = useState<{id: string, role: string} | null>(null)
-  const [alertInfo, setAlertInfo] = useState<{title: string, message: string, isOpen: boolean}>({
+  const [userToDelete, setUserToDelete] = useState<{ id: string, role: string } | null>(null)
+  const [alertInfo, setAlertInfo] = useState<{ title: string, message: string, isOpen: boolean }>({
     title: '',
     message: '',
     isOpen: false
@@ -173,16 +173,16 @@ export default function PersonalPage() {
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
-    
+
     try {
       // Verificar registros relacionados
       const relatedRecords = await checkRelatedRecords(userToDelete.id);
-      
+
       if (relatedRecords.length > 0) {
         const message = `No se puede eliminar este usuario porque tiene los siguientes registros asociados:\n\n` +
-          relatedRecords.join('\n') + 
+          relatedRecords.join('\n') +
           '\n\nPor favor, reasigna o elimina estos registros antes de eliminar el usuario.';
-        
+
         setAlertInfo({
           title: 'No se puede eliminar',
           message: message.replace(/\\n/g, '\n'),
@@ -200,22 +200,22 @@ export default function PersonalPage() {
       if (error) {
         throw error;
       }
-      
+
       // Actualizar la lista de usuarios
       setUsuarios(usuarios.filter(usuario => usuario.id !== userToDelete.id));
-      
+
       setAlertInfo({
         title: 'Éxito',
         message: 'Usuario eliminado correctamente',
         isOpen: true
       });
-      
+
     } catch (error: any) {
       console.error('Error al eliminar el usuario:', error);
-      
+
       setAlertInfo({
         title: 'Error',
-        message: error.code === '23503' 
+        message: error.code === '23503'
           ? 'No se puede eliminar el usuario porque tiene registros asociados en el sistema. Por favor, verifica y elimina o reasigna los registros relacionados primero.'
           : `Error al eliminar el usuario: ${error.message}`,
         isOpen: true
@@ -280,11 +280,11 @@ export default function PersonalPage() {
                 <p className="text-sm text-gray-600">Administra usuarios y permisos del sistema</p>
               </div>
               <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) {
-                    setEditingUser(null);
-                  }
-                }}>
+                setIsDialogOpen(open);
+                if (!open) {
+                  setEditingUser(null);
+                }
+              }}>
                 <DialogTrigger asChild onClick={() => setEditingUser(null)}>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -474,7 +474,7 @@ export default function PersonalPage() {
                 </AlertDialogCancel>
               </div>
               <div className="w-full sm:w-32">
-                <AlertDialogAction 
+                <AlertDialogAction
                   onClick={handleConfirmDelete}
                   className="w-full bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
                 >
@@ -488,12 +488,11 @@ export default function PersonalPage() {
       </AlertDialog>
 
       {/* Diálogo de alerta */}
-      <AlertDialog open={alertInfo.isOpen} onOpenChange={(open) => setAlertInfo(prev => ({...prev, isOpen: open}))}>
+      <AlertDialog open={alertInfo.isOpen} onOpenChange={(open) => setAlertInfo(prev => ({ ...prev, isOpen: open }))}>
         <AlertDialogContent className="sm:max-w-[425px] rounded-lg border-0 shadow-xl">
           <AlertDialogHeader className="space-y-4">
-            <div className={`mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
-              alertInfo.title === 'Error' ? 'bg-red-100' : 'bg-green-100'
-            }`}>
+            <div className={`mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${alertInfo.title === 'Error' ? 'bg-red-100' : 'bg-green-100'
+              }`}>
               {alertInfo.title === 'Error' ? (
                 <AlertCircle className="h-6 w-6 text-red-600" />
               ) : (

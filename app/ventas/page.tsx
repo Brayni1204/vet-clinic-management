@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 // jsPDF se importará dinámicamente solo en el cliente
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
+import {
   Plus,
   Search,
   ShoppingCart,
@@ -113,9 +113,9 @@ export default function VentasPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewSaleDialogOpen, setIsNewSaleDialogOpen] = useState(false)
-  
+
   // Filtrar productos según el término de búsqueda
-  const filteredProducts = products.filter((product: Product) => 
+  const filteredProducts = products.filter((product: Product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -162,7 +162,7 @@ export default function VentasPage() {
         `)
         .order("created_at", { ascending: false })
         .limit(50);
-        
+
       // Depuración: Mostrar las fechas recibidas
       console.log('Datos de ventas recibidos:', salesData?.map(sale => ({
         id: sale.id,
@@ -173,7 +173,7 @@ export default function VentasPage() {
         iso_string: new Date(sale.created_at).toISOString(),
         local_string: new Date(sale.created_at).toLocaleString('es-PE', { timeZone: 'America/Lima' })
       })));
-      
+
       // Usar los datos sin ajustar (el ajuste se hará en formatSaleDate)
       const dataToUse = salesData || [];
 
@@ -195,11 +195,11 @@ export default function VentasPage() {
     try {
       // Obtener la fecha actual en la zona horaria local
       const now = new Date();
-      
+
       // Crear fechas para el inicio del día y mes actual
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       // Formatear fechas para la consulta
       const todayStartStr = todayStart.toISOString();
       const monthStartStr = monthStart.toISOString();
@@ -213,10 +213,10 @@ export default function VentasPage() {
         .lte('created_at', nowStr);
 
       const salesToday = (todayInvoices || []).reduce(
-        (acc: number, inv: { total_amount?: number }) => acc + (inv.total_amount || 0), 
+        (acc: number, inv: { total_amount?: number }) => acc + (inv.total_amount || 0),
         0
       );
-      
+
       const clientIds = new Set((todayInvoices || []).map((inv: { owner_id: string }) => inv.owner_id));
       const clientsToday = clientIds.size;
 
@@ -226,9 +226,9 @@ export default function VentasPage() {
         .select("total_amount, created_at")
         .gte('created_at', monthStartStr)
         .lte('created_at', nowStr);
-        
+
       const salesMonth = (monthInvoices || []).reduce(
-        (acc: number, inv: { total_amount?: number }) => acc + (inv.total_amount || 0), 
+        (acc: number, inv: { total_amount?: number }) => acc + (inv.total_amount || 0),
         0
       );
 
@@ -312,7 +312,7 @@ export default function VentasPage() {
       const now = new Date();
       // Asegurar que la fecha se guarde como UTC en la base de datos
       const postgresTimestamp = now.toISOString();
-      
+
       if (isEditing && editingSaleId) {
         // Actualizar venta existente
         const { error: facturaError } = await supabase
@@ -418,10 +418,10 @@ export default function VentasPage() {
     } catch (error) {
       // Mostrar el error crudo en la consola
       console.error("Error crudo al guardar la venta:", error);
-      
+
       // Intentar obtener más información del error
       let errorMessage = 'Error desconocido al guardar la venta';
-      
+
       if (error instanceof Error) {
         errorMessage = error.message;
         console.error("Mensaje de error:", error.message);
@@ -434,9 +434,9 @@ export default function VentasPage() {
         errorMessage = String(errorObj.message || errorObj.error_description || errorMessage);
         console.error("Detalles del error:", JSON.stringify(errorObj, null, 2));
       }
-      
+
       toast.error(`Error al guardar la venta: ${errorMessage}`);
-      
+
       // Registrar el error completo para depuración
       console.error("Error completo:", {
         error,
@@ -464,13 +464,13 @@ export default function VentasPage() {
   // Función para formatear fechas usando formatPeruTime
   const formatSaleDate = (dateString: string, includeTime: boolean = true) => {
     if (!dateString) return '--/--/----' + (includeTime ? ' --:--' : '');
-    
+
     const formatted = formatPeruTime(dateString);
-    
+
     if (!includeTime) {
       return formatted.date;
     }
-    
+
     return formatted.full;
   };
 
@@ -489,7 +489,7 @@ export default function VentasPage() {
     }
   }
 
-    const handleViewDetails = async (sale: Sale) => {
+  const handleViewDetails = async (sale: Sale) => {
     setSelectedSale(sale)
     setIsDetailOpen(true)
     // Obtener items de la factura
@@ -505,13 +505,13 @@ export default function VentasPage() {
       setIsEditing(true)
       setEditingSaleId(sale.id)
       setSelectedClient(sale.owners || null)
-      
+
       // Obtener los items de la factura
       const { data: items } = await supabase
         .from("invoice_items")
         .select(`*, products (*)`)
         .eq("invoice_id", sale.id)
-      
+
       if (items) {
         // Mapear los items al formato del carrito
         const cartItems = items.map(item => ({
@@ -519,15 +519,15 @@ export default function VentasPage() {
           quantity: item.quantity,
           price: item.unit_price || item.products?.price || 0
         }))
-        
+
         setCart(cartItems as any)
-        
+
         // Configurar el formulario con los datos de la venta
         setSaleForm({
           metodoPago: sale.payment_method || "efectivo",
           notas: sale.notes || ""
         })
-        
+
         // Abrir el diálogo de nueva venta
         setIsNewSaleDialogOpen(true)
       }
@@ -552,28 +552,28 @@ export default function VentasPage() {
     try {
       // Importación dinámica de jsPDF solo en el cliente
       const { jsPDF } = await import('jspdf')
-      
+
       // Crear un nuevo documento PDF
       const doc = new jsPDF()
-      
+
       // Título del reporte
       doc.setFontSize(20)
       doc.text('Reporte de Ventas', 105, 20, { align: 'center' })
-      
+
       // Fecha del reporte
       doc.setFontSize(10)
       doc.text(`Generado el: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, 30, { align: 'center' })
-      
+
       // Configuración de la tabla
       const startY = 40
       const pageHeight = doc.internal.pageSize.height
       const rowHeight = 10
       let currentY = startY
-      
+
       // Encabezados de la tabla
       const headers = ['# Factura', 'Cliente', 'Fecha', 'Total', 'Estado', 'Método Pago']
       const colWidths = [25, 40, 40, 25, 25, 30] // Anchos de columna personalizados
-      
+
       // Dibujar encabezados
       doc.setFontSize(10)
       doc.setFont(undefined, 'bold')
@@ -582,17 +582,17 @@ export default function VentasPage() {
         doc.text(header, x + 2, currentY + 5)
         x += colWidths[i]
       })
-      
+
       // Línea debajo del encabezado
       currentY += 7
       doc.setLineWidth(0.5)
       doc.line(10, currentY, 200, currentY)
       currentY += 5
-      
+
       // Datos de la tabla
       doc.setFont(undefined, 'normal')
       doc.setFontSize(9)
-      
+
       sales.forEach(sale => {
         // Verificar si necesitamos una nueva página
         if (currentY > pageHeight - 20) {
@@ -608,7 +608,7 @@ export default function VentasPage() {
           currentY += 12
           doc.setFont(undefined, 'normal')
         }
-        
+
         // Datos de la fila
         const rowData = [
           sale.invoice_number || 'N/A',
@@ -618,21 +618,21 @@ export default function VentasPage() {
           getStatusText(sale.payment_status),
           sale.payment_method?.substring(0, 10) || 'No espec.'
         ]
-        
+
         // Dibujar fila
         x = 10
         rowData.forEach((cell, i) => {
           doc.text(cell.toString(), x + 2, currentY + 5, { maxWidth: colWidths[i] - 4 })
           x += colWidths[i]
         })
-        
+
         currentY += rowHeight
         // Línea entre filas
         doc.setLineWidth(0.1)
         doc.line(10, currentY, 200, currentY)
         currentY += 2
       })
-      
+
       // Número de página
       const pageCount = doc.internal.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
@@ -645,7 +645,7 @@ export default function VentasPage() {
           { align: 'center' }
         )
       }
-      
+
       // Guardar el PDF
       doc.save(`reporte-ventas-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
     } catch (error) {
@@ -846,8 +846,8 @@ export default function VentasPage() {
                               />
                             </div>
 
-                            <Button 
-                              className="w-full" 
+                            <Button
+                              className="w-full"
                               onClick={handleCreateSale}
                               variant={isEditing ? 'default' : 'default'}
                             >
@@ -879,18 +879,18 @@ export default function VentasPage() {
                     <CardTitle>Ventas Recientes</CardTitle>
                     <CardDescription>Historial de ventas</CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={generateSalesReport}
                     className="flex items-center gap-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                      <line x1="16" x2="8" y1="13" y2="13"/>
-                      <line x1="16" x2="8" y1="17" y2="17"/>
-                      <line x1="10" x2="8" y1="9" y2="9"/>
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" x2="8" y1="13" y2="13" />
+                      <line x1="16" x2="8" y1="17" y2="17" />
+                      <line x1="10" x2="8" y1="9" y2="9" />
                     </svg>
                     Generar Reporte
                   </Button>
@@ -930,8 +930,8 @@ export default function VentasPage() {
                               <Button size="sm" variant="ghost" onClick={() => handleViewDetails(sale)}>
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleEditSale(sale)}
                               >
@@ -997,82 +997,82 @@ export default function VentasPage() {
           </Tabs>
         </main>
 
-            {/* Detalles de la venta */}
-            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Detalles de la Venta</DialogTitle>
-                  <DialogDescription>
-                    Información completa de la venta seleccionada
-                  </DialogDescription>
-                </DialogHeader>
+        {/* Detalles de la venta */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalles de la Venta</DialogTitle>
+              <DialogDescription>
+                Información completa de la venta seleccionada
+              </DialogDescription>
+            </DialogHeader>
 
-                {selectedSale && (
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-medium">Factura #{selectedSale.invoice_number}</p>
-                      <p className="text-sm text-gray-600">
-                        {selectedSale.created_at 
-                          ? formatSaleDate(selectedSale.created_at, true) 
-                          : formatSaleDate(selectedSale.invoice_date, true)}
-                      </p>
-                    </div>
+            {selectedSale && (
+              <div className="space-y-4">
+                <div>
+                  <p className="font-medium">Factura #{selectedSale.invoice_number}</p>
+                  <p className="text-sm text-gray-600">
+                    {selectedSale.created_at
+                      ? formatSaleDate(selectedSale.created_at, true)
+                      : formatSaleDate(selectedSale.invoice_date, true)}
+                  </p>
+                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="font-semibold mb-2">Cliente</h3>
-                        {selectedSale.owners ? (
-                          <>
-                            <p>{selectedSale.owners.first_name} {selectedSale.owners.last_name}</p>
-                            {selectedSale.owners.email && <p className="text-sm text-gray-600">{selectedSale.owners.email}</p>}
-                            {selectedSale.owners.phone && <p className="text-sm text-gray-600">{selectedSale.owners.phone}</p>}
-                          </>
-                        ) : (
-                          <p className="italic">Cliente eliminado</p>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-2">Pago</h3>
-                        <p>Método: {selectedSale.payment_method || "No especificado"}</p>
-                        <p>Estado: {getStatusText(selectedSale.payment_status)}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold mb-2">Artículos</h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Producto</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Precio Unit.</TableHead>
-                            <TableHead>Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {saleItems.map((item) => (
-                            <TableRow key={item.id as any}>
-                              <TableCell>{(item as any).products?.name}</TableCell>
-                              <TableCell>{(item as any).products?.category}</TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>S/{(item.unit_price ?? item.products?.price ?? 0).toFixed(2)}</TableCell>
-                              <TableCell>S/{(item.total_price ?? ((item.products?.price ?? 0) * item.quantity)).toFixed(2)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    <div className="text-right space-y-1">
-                      <p>Subtotal: S/{selectedSale.subtotal.toFixed(2)}</p>
-                      <p>Impuesto: S/{selectedSale.tax_amount.toFixed(2)}</p>
-                      <p className="font-semibold">Total: S/{selectedSale.total_amount.toFixed(2)}</p>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Cliente</h3>
+                    {selectedSale.owners ? (
+                      <>
+                        <p>{selectedSale.owners.first_name} {selectedSale.owners.last_name}</p>
+                        {selectedSale.owners.email && <p className="text-sm text-gray-600">{selectedSale.owners.email}</p>}
+                        {selectedSale.owners.phone && <p className="text-sm text-gray-600">{selectedSale.owners.phone}</p>}
+                      </>
+                    ) : (
+                      <p className="italic">Cliente eliminado</p>
+                    )}
                   </div>
-                )}
-              </DialogContent>
-            </Dialog>
+                  <div>
+                    <h3 className="font-semibold mb-2">Pago</h3>
+                    <p>Método: {selectedSale.payment_method || "No especificado"}</p>
+                    <p>Estado: {getStatusText(selectedSale.payment_status)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">Artículos</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Categoría</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Precio Unit.</TableHead>
+                        <TableHead>Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {saleItems.map((item) => (
+                        <TableRow key={item.id as any}>
+                          <TableCell>{(item as any).products?.name}</TableCell>
+                          <TableCell>{(item as any).products?.category}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>S/{(item.unit_price ?? item.products?.price ?? 0).toFixed(2)}</TableCell>
+                          <TableCell>S/{(item.total_price ?? ((item.products?.price ?? 0) * item.quantity)).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="text-right space-y-1">
+                  <p>Subtotal: S/{selectedSale.subtotal.toFixed(2)}</p>
+                  <p>Impuesto: S/{selectedSale.tax_amount.toFixed(2)}</p>
+                  <p className="font-semibold">Total: S/{selectedSale.total_amount.toFixed(2)}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

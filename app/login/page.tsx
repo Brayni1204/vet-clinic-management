@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PawPrint, Stethoscope, ShoppingCart, Mail, Lock, UserPlus } from "lucide-react" // Removed Link from here
 import { signIn as signInStaff } from "@/lib/auth" // For staff login (existing)
-import { supabase } from "@/lib/supabase" // Your Supabase instance
+import { supabase } from "@/lib/db" // Your Supabase instance
 import { toast } from "sonner" // Assuming you have sonner installed
 import Link from "next/link" // Correct Link import for navigation
 

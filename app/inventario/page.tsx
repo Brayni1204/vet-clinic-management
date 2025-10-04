@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Toaster, toast } from "sonner"
 import { Trash2, Package, Plus, Search, AlertTriangle, Edit, History } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { PriceHistoryDialog } from "@/components/PriceHistoryDialog"
 // Importaciones de navegación y UI
@@ -57,7 +57,7 @@ export default function InventarioPage() {
     cantidad_stock: '',
     stock_minimo: '10',
     codigo_barras: '',
-    proveedor: 'sin-proveedor', 
+    proveedor: 'sin-proveedor',
     imagen_url: "",
   })
 
@@ -74,7 +74,7 @@ export default function InventarioPage() {
         toast.error('Error al cargar los datos iniciales')
       }
     }
-    
+
     cargarDatosIniciales()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -112,7 +112,7 @@ export default function InventarioPage() {
   const fetchProveedores = async () => {
     try {
       console.log('Buscando proveedores en la tabla de productos...');
-      
+
       // Obtener proveedores únicos de la tabla de productos
       const { data, error } = await supabase
         .from('products')
@@ -134,10 +134,10 @@ export default function InventarioPage() {
             .filter((supplier): supplier is string => !!supplier)
         )
       );
-      
+
       console.log('Proveedores encontrados en la tabla de productos:', proveedoresUnicos);
       setProveedores(proveedoresUnicos);
-      
+
     } catch (error) {
       console.error('Error al cargar proveedores:', error);
     } finally {
@@ -170,7 +170,7 @@ export default function InventarioPage() {
         stock_minimo: "10",
         codigo_barras: "",
         proveedor: "",
-    imagen_url: "",
+        imagen_url: "",
       })
     }
   }, [editingProduct])
@@ -189,17 +189,17 @@ export default function InventarioPage() {
 
     try {
       setLoading(true)
-      
+
       // Validar que el stock mínimo no sea mayor al stock actual
       if (parseInt(formData.cantidad_stock) < parseInt(formData.stock_minimo)) {
         throw new Error('El stock mínimo no puede ser mayor que la cantidad en stock')
       }
-      
+
       // Si es una categoría nueva, la añadimos a la lista de categorías
       if (formData.categoria && !categorias.includes(formData.categoria)) {
         setCategorias(prev => [...prev, formData.categoria].sort())
       }
-      
+
       const productoData = {
         name: formData.nombre,
         category: formData.categoria,
@@ -212,31 +212,31 @@ export default function InventarioPage() {
         supplier: formData.proveedor === 'sin-proveedor' ? null : formData.proveedor,
         image_url: formData.imagen_url || null
       }
-      
+
       if (editingProduct) {
         // Actualizar producto existente
         const { error } = await supabase
           .from('products')
           .update(productoData)
           .eq('id', editingProduct.id)
-          
+
         if (error) throw error
-        
+
         toast.success('Producto actualizado correctamente')
       } else {
         // Crear nuevo producto
         const { error } = await supabase
           .from('products')
           .insert([productoData])
-          
+
         if (error) throw error
-        
+
         toast.success('Producto creado correctamente')
       }
-      
+
       // Recargar la lista de productos
       await fetchProductos()
-      
+
       // Cerrar el diálogo y limpiar el formulario
       setIsDialogOpen(false)
       setEditingProduct(null)
@@ -250,9 +250,9 @@ export default function InventarioPage() {
         stock_minimo: "10",
         codigo_barras: "",
         proveedor: "",
-    imagen_url: "",
+        imagen_url: "",
       })
-      
+
     } catch (error) {
       console.error('Error al guardar el producto:', error)
       toast.error(error instanceof Error ? error.message : 'Error al guardar el producto')
@@ -282,15 +282,15 @@ export default function InventarioPage() {
   })
 
   const productosStockBajo = productos.filter((producto) => producto.stock_quantity <= producto.low_stock_threshold)
-  
+
   // Categorías predeterminadas
   const categoriasPredeterminadas = ['medicamento', 'servicios', 'alimento', 'suministros']
-  
+
   // Estado para manejar las categorías
   const [categorias, setCategorias] = useState<string[]>(categoriasPredeterminadas)
   const [categoriaAEliminar, setCategoriaAEliminar] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  
+
   // Función para cargar todas las categorías ónicas de la base de datos
   const fetchCategorias = async () => {
     try {
@@ -300,62 +300,62 @@ export default function InventarioPage() {
         .select('category')
         .not('category', 'is', null)
         .not('category', 'eq', '')
-      
+
       if (error) throw error
-      
+
       // Extraer categorías ónicas de la base de datos
       const categoriasBD = [...new Set(data.map((item: any) => item.category))] as string[]
-      
+
       // Combinar con categorías predeterminadas, asegurándonos de que no haya duplicados
       const categoriasCombinadas = [...new Set([...categoriasPredeterminadas, ...categoriasBD])]
         .filter(Boolean) // Eliminar valores nulos o vacíos
         .sort() // Ordenar alfabéticamente
-      
+
       console.log('Categorías cargadas de la base de datos:', categoriasCombinadas)
-      
+
       // Actualizar el estado solo si hay cambios
       setCategorias(prevCategorias => {
         const nuevasCategorias = [...new Set([...categoriasCombinadas, ...prevCategorias])]
           .sort()
           .filter(Boolean)
-        
+
         // Si no hay cambios, devolver el estado anterior para evitar re-renderizados innecesarios
         if (JSON.stringify(nuevasCategorias) === JSON.stringify(prevCategorias)) {
           return prevCategorias
         }
-        
+
         return nuevasCategorias
       })
-      
+
     } catch (error) {
       console.error('Error al cargar las categorías:', error)
       toast.error('Error al cargar las categorías')
       // En caso de error, mantener las categorías existentes
     }
   }
-  
+
   // Cargar categorías al montar el componente y cuando cambien los productos
   useEffect(() => {
     fetchCategorias()
   }, [productos])
-  
+
   const handleDeleteCategory = (categoria: string) => {
     setCategoriaAEliminar(categoria)
     setShowDeleteDialog(true)
   }
-  
+
   const confirmDeleteCategory = async () => {
     if (!categoriaAEliminar) return
-    
+
     try {
       // Verificar si hay productos usando esta categoría
       const { data: productosConEstaCategoria, error } = await supabase
         .from('products')
         .select('id')
         .eq('category', categoriaAEliminar)
-      
+
       if (error) throw error
-      
+
       if (productosConEstaCategoria && productosConEstaCategoria.length > 0) {
         // No permitir eliminar si hay productos con esta categoría
         toast.error(`No se puede eliminar la categoría "${categoriaAEliminar}" porque está en uso por ${productosConEstaCategoria.length} producto(s).`)
@@ -363,14 +363,14 @@ export default function InventarioPage() {
         // Actualizar la lista de categorías en el estado local
         const nuevasCategorias = categorias.filter(cat => cat !== categoriaAEliminar)
         setCategorias(nuevasCategorias)
-        
+
         // Actualizar la categoría en la base de datos para los productos que la usan
         // (esto no debería ser necesario si la validación anterior es correcta)
         await supabase
           .from('products')
           .update({ category: null })
           .eq('category', categoriaAEliminar)
-          
+
         toast.success(`Categoría "${categoriaAEliminar}" eliminada correctamente`)
       }
     } catch (error) {
@@ -429,11 +429,11 @@ export default function InventarioPage() {
                 <p className="text-sm text-gray-600">Administra productos y stock</p>
               </div>
               <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) {
-                    setEditingProduct(null);
-                  }
-                }}>
+                setIsDialogOpen(open);
+                if (!open) {
+                  setEditingProduct(null);
+                }
+              }}>
                 <DialogTrigger asChild onClick={() => setEditingProduct(null)}>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -473,7 +473,7 @@ export default function InventarioPage() {
                           + Nueva categoría
                         </Button>
                       </div>
-                      
+
                       {mostrarInputCategoria ? (
                         <div className="flex gap-2">
                           <Input
@@ -830,7 +830,7 @@ export default function InventarioPage() {
           )}
         </main>
       </div>
-      
+
       {/* Diálogo de historial de precios */}
       <PriceHistoryDialog
         isOpen={priceHistoryDialogOpen}

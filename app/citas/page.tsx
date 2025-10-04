@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Plus, Search } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 

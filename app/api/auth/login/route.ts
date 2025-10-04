@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {

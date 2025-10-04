@@ -24,7 +24,7 @@ import {
   FileText,
   FileDown,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 import {
@@ -161,7 +161,7 @@ export default function PedidosOnlinePage() {
 
       // Si el nuevo estado es 'shipped', lo cambiamos a 'delivered' para saltar el estado de envío
       const statusToUpdate = newStatus === 'shipped' ? 'delivered' : newStatus;
-      
+
       const { error } = await supabase.from("client_orders").update({ status: statusToUpdate }).eq("id", orderId)
 
       if (error) {
@@ -177,7 +177,7 @@ export default function PedidosOnlinePage() {
     }
   }
 
-    const handleViewDetails = (order: ClientOrder) => {
+  const handleViewDetails = (order: ClientOrder) => {
     setSelectedOrder(order)
     setIsDialogOpen(true)
   }
@@ -286,24 +286,24 @@ export default function PedidosOnlinePage() {
   const generatePdfReport = async () => {
     try {
       setGeneratingPdf(true)
-      
+
       // Crear un nuevo documento PDF
       const doc = new jsPDF()
-      
+
       // Título del reporte
       const title = 'Reporte de Pedidos Online'
       const date = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })
-      
+
       // Configuración del título
       doc.setFontSize(18)
       doc.setFont(undefined, 'bold')
       doc.text(title, 14, 22)
-      
+
       // Fecha del reporte
       doc.setFontSize(11)
       doc.setFont(undefined, 'normal')
       doc.text(`Generado el: ${date}`, 14, 30)
-      
+
       // Tabla de pedidos
       const tableColumn = [
         'N° Pedido',
@@ -313,7 +313,7 @@ export default function PedidosOnlinePage() {
         'Método Pago',
         'Total (S/)'
       ]
-      
+
       const tableRows = orders.map(order => [
         order.order_number || '-',
         order.client_name || 'Sin nombre',
@@ -322,39 +322,39 @@ export default function PedidosOnlinePage() {
         getPaymentMethodText(order.payment_method),
         order.total_amount?.toFixed(2) || '0.00'
       ])
-      
-      // Añadir la tabla al documento
-      ;(doc as any).autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 40,
-        headStyles: {
-          fillColor: [59, 130, 246], // azul-500
-          textColor: 255,
-          fontStyle: 'bold',
-        },
-        didDrawPage: function (data: any) {
-          // Pie de página
-          const pageSize = doc.internal.pageSize
-          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
-          doc.text('Página ' + data.pageCount, data.settings.margin.left, pageHeight - 10)
-        }
-      })
-      
+
+        // Añadir la tabla al documento
+        ; (doc as any).autoTable({
+          head: [tableColumn],
+          body: tableRows,
+          startY: 40,
+          headStyles: {
+            fillColor: [59, 130, 246], // azul-500
+            textColor: 255,
+            fontStyle: 'bold',
+          },
+          didDrawPage: function (data: any) {
+            // Pie de página
+            const pageSize = doc.internal.pageSize
+            const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
+            doc.text('Página ' + data.pageCount, data.settings.margin.left, pageHeight - 10)
+          }
+        })
+
       // Resumen
       const finalY = (doc as any).lastAutoTable?.finalY || 50
-      
+
       // Total de pedidos
       doc.setFontSize(12)
       doc.setFont(undefined, 'bold')
       doc.text('Resumen de Pedidos', 14, finalY + 15)
-      
+
       doc.setFont(undefined, 'normal')
       doc.text(`Total de pedidos: ${orders.length}`, 20, finalY + 25)
-      
+
       // Guardar el PDF
       doc.save(`reporte-pedidos-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
-      
+
       toast.success('Reporte generado exitosamente')
     } catch (error) {
       console.error('Error al generar el reporte:', error)
@@ -431,8 +431,8 @@ export default function PedidosOnlinePage() {
                       <CardTitle>Pedidos de Clientes</CardTitle>
                       <CardDescription>Lista de todos los pedidos realizados online</CardDescription>
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={generatePdfReport}
                       disabled={generatingPdf || orders.length === 0}
@@ -598,7 +598,7 @@ export default function PedidosOnlinePage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        S/. 
+                        S/.
                         {orders
                           .filter((order) => {
                             const orderDate = new Date(order.order_date || order.created_at)
@@ -633,126 +633,126 @@ export default function PedidosOnlinePage() {
             </Tabs>
           </main>
 
-            {/* Detalles del pedido */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Detalles del Pedido</DialogTitle>
-                  <DialogDescription>Información completa del pedido seleccionado</DialogDescription>
-                </DialogHeader>
+          {/* Detalles del pedido */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Detalles del Pedido</DialogTitle>
+                <DialogDescription>Información completa del pedido seleccionado</DialogDescription>
+              </DialogHeader>
 
-                {selectedOrder && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">Pedido #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</p>
-                        <p className="text-sm text-gray-600">
-                          {formatPeruTime(selectedOrder.created_at).date}
-                        </p>
-                      </div>
-                      <div className="bg-gray-100 px-3 py-1 rounded-md">
-                        <p className="font-medium text-gray-700">
-                          {formatPeruTime(selectedOrder.created_at).time}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="font-semibold mb-2">Cliente</h3>
-                        <p>{selectedOrder.client_name}</p>
-                        <p className="text-sm text-gray-600">{selectedOrder.client_email}</p>
-                        <p className="text-sm text-gray-600">{selectedOrder.client_phone}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-2">Envío</h3>
-                        <p>{selectedOrder.delivery_address}</p>
-                        {selectedOrder.estimated_delivery_date && (
-                          <p>Entrega estimada: {new Date(selectedOrder.estimated_delivery_date).toLocaleDateString("es-ES")}</p>
-                        )}
-                      </div>
-                    </div>
-
+              {selectedOrder && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold mb-2">Artículos</h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Producto</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Precio Unit.</TableHead>
-                            <TableHead>Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedOrder.order_items?.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell>{item.products?.name}</TableCell>
-                              <TableCell>{item.products?.category}</TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>S/. {item.unit_price.toFixed(2)}</TableCell>
-                              <TableCell>S/. {item.total_price.toFixed(2)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <p className="font-medium">Pedido #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</p>
+                      <p className="text-sm text-gray-600">
+                        {formatPeruTime(selectedOrder.created_at).date}
+                      </p>
                     </div>
-
-                    <div className="text-right space-y-1 mb-6">
-                      <p>Subtotal: S/. {selectedOrder.subtotal.toFixed(2)}</p>
-                      <p>Impuesto: S/. {selectedOrder.tax_amount.toFixed(2)}</p>
-                      <p className="font-semibold">Total: S/. {selectedOrder.total_amount.toFixed(2)}</p>
+                    <div className="bg-gray-100 px-3 py-1 rounded-md">
+                      <p className="font-medium text-gray-700">
+                        {formatPeruTime(selectedOrder.created_at).time}
+                      </p>
                     </div>
-
-                    {/* Comprobantes de pago */}
-                    {selectedOrder.payment_receipts && selectedOrder.payment_receipts.length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="font-semibold mb-3">Comprobantes de Pago</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {selectedOrder.payment_receipts.map((receipt, index) => (
-                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium truncate">
-                                  {receipt.fileName || `Comprobante ${index + 1}`}
-                                </span>
-                                <a 
-                                  href={receipt.data} 
-                                  download={receipt.fileName || `comprobante-${index + 1}`}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Descargar
-                                </a>
-                              </div>
-                              <div className="aspect-w-16 aspect-h-9 mt-2">
-                                {receipt.fileType.startsWith('image/') ? (
-                                  <img 
-                                    src={receipt.data} 
-                                    alt={`Comprobante ${index + 1}`}
-                                    className="w-full h-auto max-h-40 object-contain rounded"
-                                  />
-                                ) : (
-                                  <div className="bg-gray-100 p-4 rounded flex flex-col items-center justify-center h-40">
-                                    <FileText className="h-10 w-10 text-gray-400 mb-2" />
-                                    <span className="text-sm text-gray-500">Vista previa no disponible</span>
-                                    <span className="text-xs text-gray-400">{receipt.fileType}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Subido: {new Date(receipt.timestamp).toLocaleString('es-PE')}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                )}
-              </DialogContent>
-            </Dialog>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Cliente</h3>
+                      <p>{selectedOrder.client_name}</p>
+                      <p className="text-sm text-gray-600">{selectedOrder.client_email}</p>
+                      <p className="text-sm text-gray-600">{selectedOrder.client_phone}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-2">Envío</h3>
+                      <p>{selectedOrder.delivery_address}</p>
+                      {selectedOrder.estimated_delivery_date && (
+                        <p>Entrega estimada: {new Date(selectedOrder.estimated_delivery_date).toLocaleDateString("es-ES")}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">Artículos</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Producto</TableHead>
+                          <TableHead>Categoría</TableHead>
+                          <TableHead>Cantidad</TableHead>
+                          <TableHead>Precio Unit.</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedOrder.order_items?.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.products?.name}</TableCell>
+                            <TableCell>{item.products?.category}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>S/. {item.unit_price.toFixed(2)}</TableCell>
+                            <TableCell>S/. {item.total_price.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="text-right space-y-1 mb-6">
+                    <p>Subtotal: S/. {selectedOrder.subtotal.toFixed(2)}</p>
+                    <p>Impuesto: S/. {selectedOrder.tax_amount.toFixed(2)}</p>
+                    <p className="font-semibold">Total: S/. {selectedOrder.total_amount.toFixed(2)}</p>
+                  </div>
+
+                  {/* Comprobantes de pago */}
+                  {selectedOrder.payment_receipts && selectedOrder.payment_receipts.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="font-semibold mb-3">Comprobantes de Pago</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {selectedOrder.payment_receipts.map((receipt, index) => (
+                          <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium truncate">
+                                {receipt.fileName || `Comprobante ${index + 1}`}
+                              </span>
+                              <a
+                                href={receipt.data}
+                                download={receipt.fileName || `comprobante-${index + 1}`}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Descargar
+                              </a>
+                            </div>
+                            <div className="aspect-w-16 aspect-h-9 mt-2">
+                              {receipt.fileType.startsWith('image/') ? (
+                                <img
+                                  src={receipt.data}
+                                  alt={`Comprobante ${index + 1}`}
+                                  className="w-full h-auto max-h-40 object-contain rounded"
+                                />
+                              ) : (
+                                <div className="bg-gray-100 p-4 rounded flex flex-col items-center justify-center h-40">
+                                  <FileText className="h-10 w-10 text-gray-400 mb-2" />
+                                  <span className="text-sm text-gray-500">Vista previa no disponible</span>
+                                  <span className="text-xs text-gray-400">{receipt.fileType}</span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Subido: {new Date(receipt.timestamp).toLocaleString('es-PE')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </AuthGuard>

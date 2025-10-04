@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PawPrint, Plus, Search, Users, Phone, Mail } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 
@@ -380,7 +380,7 @@ export default function MascotasPage() {
                                 Edad:{" "}
                                 {Math.floor(
                                   (new Date().getTime() - new Date(pet.date_of_birth).getTime()) /
-                                    (1000 * 60 * 60 * 24 * 365),
+                                  (1000 * 60 * 60 * 24 * 365),
                                 )}{" "}
                                 años
                               </p>

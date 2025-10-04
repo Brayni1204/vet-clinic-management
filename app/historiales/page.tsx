@@ -29,7 +29,7 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   });
 };
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 
@@ -131,8 +131,8 @@ export default function HistorialesPage() {
             Array.isArray(record.pets?.owners)
               ? record.pets.owners[0] ?? { first_name: "", last_name: "" }
               : record.pets?.first_name
-              ? (record.pets.owners as { first_name: string; last_name: string })
-              : { first_name: "", last_name: "" },
+                ? (record.pets.owners as { first_name: string; last_name: string })
+                : { first_name: "", last_name: "" },
         },
       }))
       setRecords(recordsData)
@@ -191,7 +191,7 @@ export default function HistorialesPage() {
           .from("medical_records")
           .update(submitData)
           .eq("id", editingRecord.id)
-        
+
         if (error) throw error
       } else {
         // Crear nuevo registro
@@ -294,7 +294,7 @@ export default function HistorialesPage() {
                         {editingRecord ? 'Editar Historial Médico' : 'Nuevo Historial Médico'}
                       </DialogTitle>
                       <DialogDescription>
-                        {editingRecord 
+                        {editingRecord
                           ? 'Modifique los datos del historial médico.'
                           : 'Complete los datos del nuevo historial médico.'}
                       </DialogDescription>
@@ -518,9 +518,9 @@ export default function HistorialesPage() {
 
                       <div className="flex flex-col items-center space-y-2">
                         <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEdit(record);
@@ -531,7 +531,7 @@ export default function HistorialesPage() {
                           </Button>
                         </div>
                         <Stethoscope className="h-8 w-8 text-gray-400" />
-                        <button 
+                        <button
                           onClick={() => {
                             const printWindow = window.open('', '', 'width=900,height=600');
                             if (printWindow) {

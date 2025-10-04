@@ -1,53 +1,46 @@
-'use client';
+// context/AppConfigContext.tsx
+'use client'
 
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-interface AppConfigContextType {
-  clinicName: string;
-  setClinicName: (name: string) => void;
-  loading: boolean;
+interface AppConfig {
+  clinicName: string
 }
 
-const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
+const AppConfigContext = createContext<AppConfig | undefined>(undefined)
 
-export function AppConfigProvider({ children }: { children: ReactNode }) {
-  const [clinicName, setClinicName] = useState('Veterinaria');
-  const [loading, setLoading] = useState(true);
+export const AppConfigProvider = ({ children }: { children: ReactNode }) => {
+  const [config, setConfig] = useState<AppConfig>({ clinicName: 'VetClinic' })
 
   useEffect(() => {
-    async function loadClinicConfig() {
+    const fetchConfig = async () => {
       try {
-        const { data, error } = await supabase
-          .from('clinic_configuration')
-          .select('clinic_name')
-          .single();
-
-        if (error) throw error;
-        if (data?.clinic_name) {
-          setClinicName(data.clinic_name);
+        const response = await fetch('/api/config');
+        if (!response.ok) {
+          throw new Error('Failed to fetch config');
         }
+        const data = await response.json();
+        setConfig({ clinicName: data.clinic_name || 'VetClinic' });
       } catch (error) {
         console.error('Error cargando configuración de la clínica:', error);
-      } finally {
-        setLoading(false);
+        setConfig({ clinicName: 'VetClinic (Error)' });
       }
-    }
+    };
 
-    loadClinicConfig();
+    fetchConfig();
   }, []);
 
   return (
-    <AppConfigContext.Provider value={{ clinicName, setClinicName, loading }}>
+    <AppConfigContext.Provider value={config}>
       {children}
     </AppConfigContext.Provider>
-  );
+  )
 }
 
-export function useAppConfig() {
-  const context = useContext(AppConfigContext);
+export const useAppConfig = () => {
+  const context = useContext(AppConfigContext)
   if (context === undefined) {
-    throw new Error('useAppConfig debe usarse dentro de un AppConfigProvider');
+    throw new Error('useAppConfig must be used within an AppConfigProvider')
   }
-  return context;
+  return context
 }

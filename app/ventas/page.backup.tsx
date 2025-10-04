@@ -31,7 +31,7 @@ import {
   Trash2,
   Save,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { toast } from "sonner"
 
@@ -291,7 +291,7 @@ export default function VentasPage() {
       const total = subtotal + tax
 
       let invoiceId: string
-      
+
       if (editingSale) {
         // Actualizar factura existente
         const { error: invoiceError } = await supabase
@@ -446,12 +446,12 @@ export default function VentasPage() {
   const handleEditSale = (sale: Sale) => {
     // Cargar los datos de la venta en el formulario
     setEditingSale(sale)
-    
+
     // Cargar el cliente
     if (sale.owners) {
       setSelectedClient(sale.owners)
     }
-    
+
     // Cargar los items en el carrito
     if (sale.items) {
       const cartItems = sale.items.map(item => ({
@@ -465,10 +465,10 @@ export default function VentasPage() {
         quantity: item.quantity,
         price: item.unit_price || 0
       }))
-      
+
       setCart(cartItems)
     }
-    
+
     // Cargar los datos del formulario
     setSaleForm({
       metodoPago: sale.payment_method || "efectivo",
@@ -480,7 +480,7 @@ export default function VentasPage() {
         comprobante: null
       }
     })
-    
+
     setIsNewSaleDialogOpen(true)
   }
 
@@ -705,27 +705,27 @@ export default function VentasPage() {
 
                           <div className="space-y-4">
                             <div className="space-y-4">
-                            <div>
-                              <Label>Método de Pago</Label>
-                              <Select
-                                value={saleForm.metodoPago}
-                                onValueChange={handlePaymentMethodChange}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar método" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="efectivo">Efectivo</SelectItem>
-                                  <SelectItem value="yape">Yape</SelectItem>
-                                  <SelectItem value="plin">Plin</SelectItem>
-                                  <SelectItem value="tarjeta_credito">Tarjeta de Crédito</SelectItem>
-                                  <SelectItem value="tarjeta_debito">Tarjeta de Débito</SelectItem>
-                                  <SelectItem value="transferencia">Transferencia Bancaria</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                              <div>
+                                <Label>Método de Pago</Label>
+                                <Select
+                                  value={saleForm.metodoPago}
+                                  onValueChange={handlePaymentMethodChange}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar método" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                                    <SelectItem value="yape">Yape</SelectItem>
+                                    <SelectItem value="plin">Plin</SelectItem>
+                                    <SelectItem value="tarjeta_credito">Tarjeta de Crédito</SelectItem>
+                                    <SelectItem value="tarjeta_debito">Tarjeta de Débito</SelectItem>
+                                    <SelectItem value="transferencia">Transferencia Bancaria</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            {(saleForm.metodoPago === 'yape' || saleForm.metodoPago === 'plin') && (
+                              {(saleForm.metodoPago === 'yape' || saleForm.metodoPago === 'plin') && (
                               <div className="space-y-5 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 shadow-sm">
                                 <div className="flex items-center space-x-3">
                                   <div className={`p-2 rounded-lg ${saleForm.metodoPago === 'yape' ? 'bg-purple-100' : 'bg-blue-100'}`}>
@@ -966,9 +966,9 @@ export default function VentasPage() {
                               )}
                             </div>
                           </div>
-                        </div>
+                          </div>
                       )}
-                    </div>
+                        </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1037,9 +1037,9 @@ export default function VentasPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleViewDetails(sale);
@@ -1047,8 +1047,8 @@ export default function VentasPage() {
                               >
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={(e) => {
                                   e.stopPropagation();

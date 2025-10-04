@@ -15,7 +15,7 @@ import {
   Package,
   FileText,
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import {
   BarChart,
@@ -101,7 +101,7 @@ export default function ReportesPage() {
         .from('clinic_configuration')
         .select('low_stock_threshold')
         .single()
-      
+
       const lowStockThreshold = config?.low_stock_threshold || 5
 
       const [
@@ -169,7 +169,7 @@ export default function ReportesPage() {
       // Inicializar los últimos 6 meses con valores en 0
       const ventasPorMes: { [key: string]: { total: number; cantidad: number } } = {}
       const currentDate = new Date()
-      
+
       for (let i = 5; i >= 0; i--) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
         const mesKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`
@@ -181,7 +181,7 @@ export default function ReportesPage() {
         if (factura.invoice_date && factura.payment_status === 'paid') {
           const fecha = new Date(factura.invoice_date)
           const mesKey = `${fecha.getFullYear()}-${(fecha.getMonth() + 1).toString().padStart(2, "0")}`
-          
+
           if (ventasPorMes[mesKey]) {
             ventasPorMes[mesKey].total += factura.total_amount || 0
             ventasPorMes[mesKey].cantidad += 1
@@ -207,7 +207,7 @@ export default function ReportesPage() {
   const fetchVentasDiarias = async () => {
     try {
       setLoadingDiario(true)
-      
+
       // Obtener las facturas pagadas de los últimos 30 días
       const { data: facturas, error } = await supabase
         .from('invoices')
@@ -215,50 +215,50 @@ export default function ReportesPage() {
         .eq('payment_status', 'paid')
         .order('invoice_date', { ascending: false })
         .limit(1000) // Limitar a 1000 registros para evitar sobrecarga
-      
+
       if (error) throw error
-      
+
       // Objeto para agrupar por fecha
       const ventasPorDia: { [key: string]: { total: number; cantidad: number } } = {}
-      
+
       // Procesar solo las facturas que tienen fecha
       facturas?.filter(f => f.invoice_date).forEach(factura => {
         // Usar invoice_date como fecha principal (ya que es DATE en la BD)
         const fechaFactura = factura.invoice_date
         const fechaObj = new Date(fechaFactura)
-        
+
         // Formatear la fecha como YYYY-MM-DD para usar como clave
         const fechaKey = fechaObj.toISOString().split('T')[0]
-        
+
         if (!ventasPorDia[fechaKey]) {
           ventasPorDia[fechaKey] = { total: 0, cantidad: 0 }
         }
         ventasPorDia[fechaKey].total += parseFloat(factura.total_amount) || 0
         ventasPorDia[fechaKey].cantidad += 1
       })
-      
+
       // Convertir a array, formatear y ordenar por fecha (más reciente primero)
       const ventasConFecha: VentaDiariaConFechaObj[] = []
-      
+
       // Procesar cada entrada
       for (const [fecha, datos] of Object.entries(ventasPorDia)) {
         const fechaObj = new Date(fecha)
         // Saltar fechas inválidas
         if (isNaN(fechaObj.getTime())) continue
-        
+
         // Formatear fecha como en la sección de ventas
         const diaSemana = fechaObj.toLocaleDateString('es-PE', { weekday: 'short' })
-        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', { 
-          day: '2-digit', 
+        const fechaFormateada = fechaObj.toLocaleDateString('es-PE', {
+          day: '2-digit',
           month: '2-digit',
           year: 'numeric'
         })
-        
+
         ventasConFecha.push({
           fecha,
-          fechaFormateada: fechaObj.toLocaleDateString('es-PE', { 
-            day: '2-digit', 
-            month: '2-digit' 
+          fechaFormateada: fechaObj.toLocaleDateString('es-PE', {
+            day: '2-digit',
+            month: '2-digit'
           }),
           fechaCompleta: fechaFormateada, // Para mostrar en tooltip o donde se necesite
           total_ventas: datos.total,
@@ -268,11 +268,11 @@ export default function ReportesPage() {
           fechaObj: fechaObj
         })
       }
-      
+
       // Ordenar por fecha (más reciente primero) y limitar a 30 días
       ventasConFecha.sort((a, b) => b.fechaObj.getTime() - a.fechaObj.getTime())
       const ventasRecientes = ventasConFecha.slice(0, 30)
-      
+
       // Crear array final sin fechaObj
       const ventasDiariasArray: VentaDiariaBase[] = ventasRecientes.map(({ fecha, fechaFormateada, total_ventas, cantidad_facturas, promedio_venta, dia_semana }) => ({
         fecha,
@@ -282,7 +282,7 @@ export default function ReportesPage() {
         promedio_venta,
         dia_semana
       }))
-      
+
       setVentasDiarias(ventasDiariasArray)
     } catch (error) {
       console.error('Error al obtener el historial de ventas diarias:', error)
@@ -294,7 +294,7 @@ export default function ReportesPage() {
   const fetchHistorialVentas = async () => {
     try {
       setLoadingHistorial(true)
-      
+
       // Obtener el año más antiguo de las facturas
       const { data: facturaAntigua, error: errorAntigua } = await supabase
         .from('invoices')
@@ -302,33 +302,33 @@ export default function ReportesPage() {
         .order('invoice_date', { ascending: true })
         .limit(1)
         .single()
-      
+
       if (errorAntigua) throw errorAntigua
-      
+
       if (!facturaAntigua) {
         setHistorialVentas([])
         return
       }
-      
+
       const añoInicio = new Date(facturaAntigua.invoice_date).getFullYear()
       const añoActual = new Date().getFullYear()
-      
+
       // Obtener datos de ventas por año
       const { data: ventasPorAño, error } = await supabase
         .from('invoices')
         .select('invoice_date, total_amount, payment_status')
         .eq('payment_status', 'paid')
-      
+
       if (error) throw error
-      
+
       // Procesar datos para agrupar por año
       const ventasAnuales: { [key: number]: { total: number; cantidad: number } } = {}
-      
+
       // Inicializar todos los años con valores en 0
       for (let año = añoInicio; año <= añoActual; año++) {
         ventasAnuales[año] = { total: 0, cantidad: 0 }
       }
-      
+
       // Procesar las facturas
       ventasPorAño?.forEach(factura => {
         if (factura.invoice_date && factura.payment_status === 'paid') {
@@ -339,7 +339,7 @@ export default function ReportesPage() {
           }
         }
       })
-      
+
       // Convertir a array y calcular promedio
       const historial = Object.entries(ventasAnuales)
         .map(([año, datos]) => ({
@@ -349,7 +349,7 @@ export default function ReportesPage() {
           promedio_venta: datos.cantidad > 0 ? datos.total / datos.cantidad : 0
         }))
         .sort((a, b) => b.año - a.año) // Ordenar de más reciente a más antiguo
-      
+
       setHistorialVentas(historial)
     } catch (error) {
       console.error('Error al obtener el historial de ventas:', error)
@@ -371,11 +371,11 @@ export default function ReportesPage() {
         .gte("invoice_date", startDate.toISOString().split('T')[0])
         .lte("invoice_date", endDate.toISOString().split('T')[0])
         .eq("payment_status", "paid")
-      
+
       if (errorFacturas) throw errorFacturas
-      
+
       const facturaIds = facturas?.map(f => f.id) || []
-      
+
       if (facturaIds.length === 0) {
         setProductosMasVendidos([])
         return
@@ -402,11 +402,13 @@ export default function ReportesPage() {
 
       if (data) {
         // Agrupar por producto
-        const productoStats: { [key: string]: { 
-          total_vendido: number; 
-          ingresos: number; 
-          categoria: string 
-        } } = {}
+        const productoStats: {
+          [key: string]: {
+            total_vendido: number;
+            ingresos: number;
+            categoria: string
+          }
+        } = {}
 
         data.forEach((item) => {
           const productoInfo = Array.isArray(item.products) ? item.products[0] : item.products
@@ -416,10 +418,10 @@ export default function ReportesPage() {
           const precioTotal = item.total_price || 0
 
           if (!productoStats[nombre]) {
-            productoStats[nombre] = { 
-              total_vendido: 0, 
-              ingresos: 0, 
-              categoria 
+            productoStats[nombre] = {
+              total_vendido: 0,
+              ingresos: 0,
+              categoria
             }
           }
 
@@ -585,18 +587,18 @@ export default function ReportesPage() {
                       }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="mes" 
+                      <XAxis
+                        dataKey="mes"
                         tickFormatter={(value) => {
                           const [year, month] = value.split('-')
                           const date = new Date(Number(year), Number(month) - 1)
                           return date.toLocaleDateString('es-ES', { month: 'short' })
                         }}
                       />
-                      <YAxis 
+                      <YAxis
                         tickFormatter={(value) => `S/.${value.toLocaleString()}`}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value, name) => [
                           name === 'total_ventas' ? `S/.${Number(value).toLocaleString()}` : value,
                           name === 'total_ventas' ? 'Total Ventas' : 'Facturas'
@@ -608,16 +610,16 @@ export default function ReportesPage() {
                         }}
                       />
                       <Legend />
-                      <Bar 
-                        dataKey="total_ventas" 
-                        name="Total Ventas" 
-                        fill="#4f46e5" 
+                      <Bar
+                        dataKey="total_ventas"
+                        name="Total Ventas"
+                        fill="#4f46e5"
                         radius={[4, 4, 0, 0]}
                       />
-                      <Bar 
-                        dataKey="cantidad_facturas" 
-                        name="N° Facturas" 
-                        fill="#818cf8" 
+                      <Bar
+                        dataKey="cantidad_facturas"
+                        name="N° Facturas"
+                        fill="#818cf8"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
@@ -645,8 +647,8 @@ export default function ReportesPage() {
                   {/* Productos Más Vendidos */}
                 </CardTitle>
                 <CardDescription>
-                  {productosMasVendidos.length > 0 
-                    ? `Top ${Math.min(10, productosMasVendidos.length)} productos por cantidad vendida` 
+                  {productosMasVendidos.length > 0
+                    ? `Top ${Math.min(10, productosMasVendidos.length)} productos por cantidad vendida`
                     : 'No hay datos de productos vendidos en el período seleccionado'}
                 </CardDescription>
               </CardHeader>
@@ -667,8 +669,8 @@ export default function ReportesPage() {
                         productosMasVendidos.map((producto, index) => {
                           const isTop3 = index < 3;
                           return (
-                            <tr 
-                              key={index} 
+                            <tr
+                              key={index}
                               className={`hover:bg-gray-50 ${isTop3 ? 'bg-gradient-to-r from-blue-50 to-white' : ''}`}
                             >
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500 w-12">
@@ -788,10 +790,10 @@ export default function ReportesPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {historialVentas.map((venta, index, array) => {
                         const esUltimoAño = index === 0;
-                        const variacion = index < array.length - 1 
-                          ? ((venta.total_ventas - array[index + 1].total_ventas) / array[index + 1].total_ventas) * 100 
+                        const variacion = index < array.length - 1
+                          ? ((venta.total_ventas - array[index + 1].total_ventas) / array[index + 1].total_ventas) * 100
                           : 0;
-                        
+
                         return (
                           <tr key={venta.año} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -815,11 +817,10 @@ export default function ReportesPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               {index < array.length - 1 ? (
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  variacion >= 0 
-                                    ? 'bg-green-100 text-green-800' 
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variacion >= 0
+                                    ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
-                                }`}>
+                                  }`}>
                                   {variacion >= 0 ? '↑' : '↓'} {Math.abs(variacion).toFixed(1)}%
                                 </span>
                               ) : (

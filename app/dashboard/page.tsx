@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 import { Calendar, PawPrint, DollarSign, Package, Users, TrendingUp, Clock, AlertCircle, Activity } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import Link from "next/link"
 
 interface RecentActivity {

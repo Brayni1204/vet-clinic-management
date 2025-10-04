@@ -10,9 +10,9 @@ import { es } from 'date-fns/locale';
 const safeFormatDate = (dateString: string | Date, formatStr: string): string => {
   try {
     if (!dateString) return 'Fecha no disponible';
-    
+
     let date: Date;
-    
+
     if (dateString instanceof Date) {
       date = dateString;
     } else if (typeof dateString === 'string') {
@@ -25,7 +25,7 @@ const safeFormatDate = (dateString: string | Date, formatStr: string): string =>
         const [datePart, timePart] = dateString.split('T');
         const [year, month, day] = datePart.split('-').map(Number);
         const [hours, minutes] = timePart.split(':').map(Number);
-        
+
         // Crear la fecha en la zona horaria local
         date = new Date(year, month - 1, day, hours, minutes);
       } else {
@@ -35,13 +35,13 @@ const safeFormatDate = (dateString: string | Date, formatStr: string): string =>
     } else {
       return 'Formato de fecha no válido';
     }
-    
+
     // Verificar si la fecha es válida
     if (!isValid(date)) {
       console.error('Fecha inválida:', dateString);
       return 'Fecha no válida';
     }
-    
+
     // Usar el método toLocaleString para manejar correctamente la zona horaria
     if (formatStr === 'PPP') {
       return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
@@ -50,7 +50,7 @@ const safeFormatDate = (dateString: string | Date, formatStr: string): string =>
     } else if (formatStr === 'p') {
       return format(date, 'hh:mm a', { locale: es });
     }
-    
+
     return format(date, formatStr, { locale: es });
   } catch (error) {
     console.error('Error al formatear fecha:', error, 'Valor original:', dateString);
@@ -81,7 +81,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/db';
 import { Purchase, PurchaseItem } from '../../types/purchase';
 import { savePurchase, getPurchases, updateInventoryFromPurchase, deletePurchase } from '@/lib/purchaseService';
 import { Product } from '../../types/product';
@@ -104,30 +104,30 @@ export default function ComprasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false); // Estado para el diálogo de detalles
   const [generatingPdf, setGeneratingPdf] = useState(false); // Estado para el indicador de carga del PDF
-  
+
   // Función para generar el reporte en PDF
   const generatePdfReport = async () => {
     try {
       setGeneratingPdf(true);
-      
+
       // Crear un nuevo documento PDF
       const doc = new jsPDF();
-      
+
       // Título del reporte
       const title = 'Reporte de Compras';
       const currentDate = new Date().toISOString();
       const formattedDate = safeFormatDate(currentDate, 'PPP');
-      
+
       // Configuración del título
       doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
       doc.text(title, 14, 22);
-      
+
       // Fecha del reporte
       doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
       doc.text(`Generado el: ${formattedDate}`, 14, 30);
-      
+
       // Tabla de compras
       const tableColumn = [
         'Nº Factura',
@@ -138,19 +138,19 @@ export default function ComprasPage() {
         'IGV',
         'Total'
       ];
-      
+
       const tableRows = purchases.map(purchase => {
         // Calcular subtotal, IGV y total basado en los ítems si no están definidos
         let subtotal = 0;
         let tax = 0;
         let total = 0;
-        
+
         if (purchase.items && purchase.items.length > 0) {
           subtotal = purchase.items.reduce((sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 0), 0);
           tax = subtotal * 0.18; // Asumiendo 18% de IGV
           total = subtotal + tax;
         }
-        
+
         return [
           purchase.invoiceNumber || '-',
           purchase.supplier || 'No especificado',
@@ -161,7 +161,7 @@ export default function ComprasPage() {
           `S/. ${total.toFixed(2)}`
         ];
       });
-      
+
       // Añadir la tabla al documento
       (doc as any).autoTable({
         head: [tableColumn],
@@ -179,10 +179,10 @@ export default function ComprasPage() {
           doc.text('Página ' + data.pageCount, data.settings.margin.left, pageHeight - 10);
         }
       });
-      
+
       // Resumen
       const finalY = (doc as any).lastAutoTable?.finalY || 50;
-      
+
       // Totales
       const totalPurchases = purchases.length;
       const totalAmount = purchases.reduce((sum, purchase) => {
@@ -192,23 +192,23 @@ export default function ComprasPage() {
         }
         return sum;
       }, 0);
-      
+
       const totalTax = totalAmount * 0.18; // 18% del total
       const subtotal = totalAmount - totalTax;
-      
+
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('Resumen de Compras', 14, finalY + 15);
-      
+
       doc.setFont(undefined, 'normal');
       doc.text(`Total de compras: ${totalPurchases}`, 20, finalY + 25);
       doc.text(`Subtotal: S/. ${subtotal.toFixed(2)}`, 20, finalY + 33);
       doc.text(`Total IGV (18%): S/. ${totalTax.toFixed(2)}`, 20, finalY + 41);
       doc.text(`Monto total: S/. ${totalAmount.toFixed(2)}`, 20, finalY + 49);
-      
+
       // Guardar el PDF
       doc.save(`reporte-compras-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      
+
       toast({
         title: '\u00c9xito',
         description: 'Reporte generado correctamente',
@@ -259,7 +259,7 @@ export default function ComprasPage() {
         setIsLoading(false);
       }
     };
-    
+
     loadInitialData();
   }, []);
 
@@ -271,14 +271,14 @@ export default function ComprasPage() {
         .select('supplier')
         .not('supplier', 'is', null)
         .not('supplier', 'eq', '');
-      
+
       if (error) throw error;
-      
+
       // Extraer nombres únicos de proveedores
       const uniqueSuppliers = Array.from(new Set(
         data.map(item => item.supplier).filter(Boolean)
       ));
-      
+
       setSuppliers(uniqueSuppliers);
     } catch (error) {
       console.error('Error cargando proveedores:', error);
@@ -303,13 +303,13 @@ export default function ComprasPage() {
     try {
       // Agregar el nuevo proveedor a la lista
       setSuppliers(prev => [...new Set([...prev, newSupplierName.trim()])]);
-      
+
       // Seleccionar el nuevo proveedor
       setSelectedSupplier(newSupplierName.trim());
-      
+
       // Limpiar el campo
       setNewSupplierName('');
-      
+
       // Cerrar el diálogo
       setIsSupplierDialogOpen(false);
 
@@ -320,7 +320,7 @@ export default function ComprasPage() {
       });
     } catch (error) {
       console.error('Error guardando proveedor:', error);
-      
+
       // Mostrar mensaje de error
       toast({
         title: 'Error',
@@ -333,14 +333,14 @@ export default function ComprasPage() {
   const loadPurchases = async () => {
     try {
       const data = await getPurchases();
-      
+
       // Asegurarse de que cada compra tenga un proveedor
       const purchasesWithSupplier = data.map(purchase => ({
         ...purchase,
         // Si no hay proveedor, usar 'Proveedor no especificado'
         supplier: purchase.supplier || 'Proveedor no especificado'
       }));
-      
+
       setPurchases(purchasesWithSupplier);
       return purchasesWithSupplier;
     } catch (error) {
@@ -357,11 +357,11 @@ export default function ComprasPage() {
 
     try {
       const success = await deletePurchase(purchaseId);
-      
+
       if (success) {
         // Actualizar la lista de compras
         await loadPurchases();
-        
+
         toast({
           title: 'Éxito',
           description: 'Compra eliminada correctamente',
@@ -385,7 +385,7 @@ export default function ComprasPage() {
         .from('products')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
@@ -482,11 +482,11 @@ export default function ComprasPage() {
           .insert([newProduct]);
 
         if (createError) throw createError;
-        
+
         console.log('Nuevo producto creado:', newProduct);
         return newProduct;
       }
-      
+
       return existingProduct;
     } catch (error) {
       console.error('Error al verificar/crear producto:', error);
@@ -496,10 +496,10 @@ export default function ComprasPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Evitar múltiples envíos
     if (isSubmitting) return;
-    
+
     if (items.length === 0) {
       toast({
         title: 'Error',
@@ -517,23 +517,23 @@ export default function ComprasPage() {
       });
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // Verificar y crear productos que no existan
       for (const item of items) {
         await checkAndCreateProduct(item);
       }
-      
+
       // Usar la fecha directamente del input (formato YYYY-MM-DD)
       const formattedDate = purchaseDate;
-      
+
       // Calcular totales
       const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
       const igv = items.reduce((sum, item) => sum + (item.igv || 0), 0);
       const total = subtotal + igv; // El total ya incluye IGV
-      
+
       const newPurchase = await savePurchase({
         supplier: selectedSupplier,
         invoiceNumber,
@@ -550,34 +550,34 @@ export default function ComprasPage() {
         total,
         notes
       });
-      
+
       console.log('Nueva compra creada:', newPurchase);
-      
+
       // Actualizar el inventario con los precios sin IGV
       await updateInventoryFromPurchase(newPurchase);
-      
+
       // Reset form
       setSelectedSupplier('');
       setInvoiceNumber('');
       setPurchaseDate(format(new Date(), 'yyyy-MM-dd'));
       setItems([]);
       setNotes('');
-      
+
       // Cerrar el diálogo
       setIsDialogOpen(false);
-      
+
       // Recargar compras y productos
       await Promise.all([
         loadPurchases(),
         loadProducts()
       ]);
-      
+
       // Mostrar mensaje de éxito
       toast({
         title: 'Éxito',
         description: 'Compra registrada correctamente y productos actualizados en inventario',
       });
-      
+
     } catch (error) {
       console.error('Error saving purchase:', error);
       toast({
@@ -590,10 +590,10 @@ export default function ComprasPage() {
     }
   };
 
-  const filteredPurchases = purchases.filter(purchase => 
+  const filteredPurchases = purchases.filter(purchase =>
     purchase.supplier?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    purchase.items?.some((item: PurchaseItem) => 
+    purchase.items?.some((item: PurchaseItem) =>
       item.name?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -629,7 +629,7 @@ export default function ComprasPage() {
                   Compra del {safeFormatDate(selectedPurchase.purchaseDate, 'PPP')}
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-6">
                 {/* Información de la compra */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
@@ -675,7 +675,7 @@ export default function ComprasPage() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="ml-4 text-right">
                             <div className="grid grid-cols-4 gap-4 text-sm">
                               <div className="w-16">
@@ -746,8 +746,8 @@ export default function ComprasPage() {
               </div>
 
               <DialogFooter>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     // Generar PDF o algo similar
                     window.print();
@@ -771,8 +771,8 @@ export default function ComprasPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Compras</h1>
                 <p className="text-sm text-gray-600">Gestión de compras de inventario</p>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={generatePdfReport}
                 disabled={generatingPdf || purchases.length === 0}
                 className="flex items-center gap-2"
@@ -794,7 +794,7 @@ export default function ComprasPage() {
                       Ingresa los detalles de la compra y los productos adquiridos.
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <form onSubmit={handleSubmit} className="space-y-6 py-2">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
@@ -811,8 +811,8 @@ export default function ComprasPage() {
                             Nuevo Proveedor
                           </Button>
                         </div>
-                        <Select 
-                          value={selectedSupplier} 
+                        <Select
+                          value={selectedSupplier}
                           onValueChange={setSelectedSupplier}
                         >
                           <SelectTrigger>
@@ -836,7 +836,7 @@ export default function ComprasPage() {
                           onChange={(e) => setInvoiceNumber(e.target.value)}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="purchaseDate">Fecha de Compra *</Label>
                         <Input
@@ -851,7 +851,7 @@ export default function ComprasPage() {
 
                     <div className="border rounded-lg p-4">
                       <h3 className="font-medium mb-4">Productos de la Compra</h3>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 items-end">
                         <div className="md:col-span-4 space-y-2">
                           <Label htmlFor="product">Producto *</Label>
@@ -871,7 +871,7 @@ export default function ComprasPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div className="md:col-span-2 space-y-2">
                           <Label htmlFor="quantity">Cantidad *</Label>
                           <Input
@@ -883,7 +883,7 @@ export default function ComprasPage() {
                             required
                           />
                         </div>
-                        
+
                         <div className="md:col-span-2 space-y-2">
                           <Label htmlFor="unitPrice">Precio Unit. (S/.) *</Label>
                           <Input
@@ -896,7 +896,7 @@ export default function ComprasPage() {
                             required
                           />
                         </div>
-                        
+
                         <div className="md:col-span-2 space-y-2">
                           <Label htmlFor="lotNumber">Lote</Label>
                           <Input
@@ -905,7 +905,7 @@ export default function ComprasPage() {
                             onChange={(e) => setLotNumber(e.target.value)}
                           />
                         </div>
-                        
+
                         <div className="md:col-span-2 space-y-2">
                           <Label htmlFor="expirationDate">Fecha Venc.</Label>
                           <Input
@@ -916,10 +916,10 @@ export default function ComprasPage() {
                           />
                         </div>
                       </div>
-                      
-                      <Button 
-                        type="button" 
-                        onClick={handleAddItem} 
+
+                      <Button
+                        type="button"
+                        onClick={handleAddItem}
                         className="w-full mt-2"
                       >
                         <Plus className="mr-2 h-4 w-4" />
@@ -1053,15 +1053,15 @@ export default function ComprasPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsSupplierDialogOpen(false)}
                     >
                       Cancelar
                     </Button>
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={handleAddSupplier}
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -1100,19 +1100,19 @@ export default function ComprasPage() {
                             Compra del {purchase.purchaseDate.split('T')[0].split('-').reverse().join('/')}
                           </h3>
                           {purchase.invoiceNumber && (
-                             <span className="text-sm text-gray-500">Factura: {purchase.invoiceNumber}</span>
+                            <span className="text-sm text-gray-500">Factura: {purchase.invoiceNumber}</span>
                           )}
                         </div>
                         <p className="text-gray-600 mb-2">Proveedor: <span className="font-medium">{purchase.supplier}</span></p>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-500">Producto:</span>
-                                  <p className="font-medium">
-                                    {purchase.items[0]?.name || 'Ninguno'}
-                                    {purchase.items[0]?.quantity ? ` (${purchase.items[0].quantity} ${purchase.items[0].quantity === 1 ? 'unidad' : 'unidades'})` : ''}
-                                    {purchase.items.length > 1 ? ` +${purchase.items.length - 1} más` : ''}
-                                  </p>
-                                </div>
+                          <div>
+                            <span className="text-gray-500">Producto:</span>
+                            <p className="font-medium">
+                              {purchase.items[0]?.name || 'Ninguno'}
+                              {purchase.items[0]?.quantity ? ` (${purchase.items[0].quantity} ${purchase.items[0].quantity === 1 ? 'unidad' : 'unidades'})` : ''}
+                              {purchase.items.length > 1 ? ` +${purchase.items.length - 1} más` : ''}
+                            </p>
+                          </div>
                           <div>
                             <span className="text-gray-500">Subtotal:</span>
                             <p className="font-medium">S/.{purchase.subtotal.toFixed(2)}</p>
@@ -1130,8 +1130,8 @@ export default function ComprasPage() {
 
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1141,8 +1141,8 @@ export default function ComprasPage() {
                             <FileText className="h-4 w-4 mr-2" />
                             Ver Detalles
                           </Button>
-                          <Button 
-                            variant="destructive" 
+                          <Button
+                            variant="destructive"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();

@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Package, Plus, Search, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 
 interface Product {
   id: string

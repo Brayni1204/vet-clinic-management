@@ -16,8 +16,8 @@ INSERT INTO owners (id, first_name, last_name, email, phone, address, city, stat
 (gen_random_uuid(), 'Roberto', 'Díaz', 'roberto.diaz@email.com', '555-1005', 'Av. Bagua Grande 654', 'Bagua', 'Amazonas', '05141');
 
 -- Insert demo pets (using owner IDs from above)
-INSERT INTO pets (owner_id, name, species, breed, color, gender, date_of_birth, weight) 
-SELECT 
+INSERT INTO pets (owner_id, name, species, breed, color, gender, date_of_birth, weight)
+SELECT
     o.id,
     pet_data.name,
     pet_data.species,
@@ -28,7 +28,7 @@ SELECT
     pet_data.weight
 FROM owners o
 CROSS JOIN (
-    VALUES 
+    VALUES
         ('Max', 'Perro', 'Golden Retriever', 'Dorado', 'Macho', '2020-05-15', 30.5),
         ('Luna', 'Gato', 'Persian', 'Blanco', 'Hembra', '2019-08-22', 8.2),
         ('Rocky', 'Perro', 'German Shepherd', 'Marrón', 'Macho', '2018-12-10', 35.0),
@@ -52,19 +52,19 @@ INSERT INTO products (name, category, description, price, cost, stock_quantity, 
 
 -- Insert demo appointments
 INSERT INTO appointments (pet_id, owner_id, veterinarian_id, appointment_date, appointment_time, reason, status)
-SELECT 
+SELECT
     p.id,
     p.owner_id,
     u.id,
     CURRENT_DATE + INTERVAL '1 day' * (ROW_NUMBER() OVER ()),
     '10:00:00'::TIME + INTERVAL '30 minutes' * (ROW_NUMBER() OVER ()),
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 4 = 1 THEN 'Consulta de rutina'
         WHEN ROW_NUMBER() OVER () % 4 = 2 THEN 'Vacunación'
         WHEN ROW_NUMBER() OVER () % 4 = 3 THEN 'Revisión post-operatoria'
         ELSE 'Consulta por enfermedad'
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 'scheduled'
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 'confirmed'
         ELSE 'completed'
@@ -77,33 +77,33 @@ LIMIT 10;
 
 -- Insert demo medical records
 INSERT INTO medical_records (pet_id, veterinarian_id, visit_date, reason_for_visit, symptoms, diagnosis, treatment, medications, weight, temperature)
-SELECT 
+SELECT
     p.id,
     u.id,
     CURRENT_DATE - INTERVAL '1 day' * (ROW_NUMBER() OVER ()),
     'Consulta de rutina',
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 'Sin síntomas aparentes'
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 'Letargo leve, pérdida de apetito'
         ELSE 'Tos ocasional, estornudos'
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 'Animal sano'
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 'Gastroenteritis leve'
         ELSE 'Resfriado común'
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 'Mantenimiento preventivo'
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 'Dieta blanda, hidratación'
         ELSE 'Descanso, medicación sintomática'
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 'Vitaminas'
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 'Probióticos'
         ELSE 'Expectorante'
     END,
     p.weight,
-    CASE 
+    CASE
         WHEN p.species = 'Perro' THEN 38.5
         WHEN p.species = 'Gato' THEN 38.0
         ELSE 38.2
@@ -115,32 +115,32 @@ LIMIT 8;
 
 -- Insert demo invoices
 INSERT INTO invoices (owner_id, pet_id, invoice_number, invoice_date, subtotal, tax_amount, total_amount, payment_status, payment_method)
-SELECT 
+SELECT
     o.id,
     p.id,
     'INV-' || LPAD((ROW_NUMBER() OVER ())::TEXT, 6, '0'),
     CURRENT_DATE - INTERVAL '1 day' * (ROW_NUMBER() OVER ()),
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 45.00
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 78.50
         ELSE 125.00
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 3.94
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 6.87
         ELSE 10.94
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 48.94
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 85.37
         ELSE 135.94
     END,
-    CASE 
-        WHEN ROW_NUMBER() OVER () % 2 = 1 THEN 'paid'      
-        ELSE 'pending'                                    
+    CASE
+        WHEN ROW_NUMBER() OVER () % 2 = 1 THEN 'paid'
+        ELSE 'pending'
     END,
-    CASE 
-        WHEN ROW_NUMBER() OVER () % 2 = 1 THEN 'card'      
+    CASE
+        WHEN ROW_NUMBER() OVER () % 2 = 1 THEN 'card'
         ELSE 'cash'
     END
 FROM owners o
@@ -160,34 +160,34 @@ INSERT INTO client_orders (
   status,
   payment_method
 )
-SELECT 
+SELECT
     'ORD-' || LPAD((ROW_NUMBER() OVER ())::TEXT, 6, '0'),
     o.first_name || ' ' || o.last_name,
     o.email,
     o.phone,
     COALESCE(o.address, 'Jr. Sin Nombre 123, Bagua'),
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 35.00
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 67.50
         ELSE 89.00
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 3.06
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 5.91
         ELSE 7.79
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 38.06
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 73.41
         ELSE 96.79
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 4 = 1 THEN 'pending'
         WHEN ROW_NUMBER() OVER () % 4 = 2 THEN 'confirmed'
         WHEN ROW_NUMBER() OVER () % 4 = 3 THEN 'preparing'
         ELSE 'shipped'
     END,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 2 = 1 THEN 'card'
         ELSE 'paypal'
     END
@@ -196,16 +196,16 @@ LIMIT 5;
 
 -- Insert demo order items
 INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-SELECT 
+SELECT
     co.id,
     p.id,
-    CASE 
+    CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 1
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 2
         ELSE 3
     END,
     p.price,
-    p.price * CASE 
+    p.price * CASE
         WHEN ROW_NUMBER() OVER () % 3 = 1 THEN 1
         WHEN ROW_NUMBER() OVER () % 3 = 2 THEN 2
         ELSE 3
@@ -218,22 +218,18 @@ LIMIT 10;
 
 -- Insert demo clinic configuration
 INSERT INTO clinic_configuration (
-    clinic_name, 
-    address, 
-    phone, 
-    email, 
-    opening_hours,
-    closing_hours,
-    default_appointment_duration,
-    default_tax_rate
+    clinic_name,
+    clinic_address,
+    clinic_phone,
+    clinic_email,
+    appointment_duration,
+    tax_rate
 )
 VALUES (
     'VetClinic Pro',
     'Jr. Veterinarios 123, Bagua, Amazonas 05141, Perú',
     '555-VET-CARE',
     'info@vetclinicpro.com',
-    '08:00:00',
-    '18:00:00',
     30,
     0.0875
 );

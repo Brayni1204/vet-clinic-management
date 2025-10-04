@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PawPrint, Plus, Search, Users, Edit, Phone, Mail } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { Sidebar } from "@/components/sidebar"
 import { AuthGuard } from "@/components/auth-guard"
 
@@ -201,7 +201,7 @@ export default function PetsPage() {
 
     // Convert empty strings to null
     const ownerData: Record<string, any> = {}
-    Object.entries(ownerFormData).forEach(([k,v])=>{
+    Object.entries(ownerFormData).forEach(([k, v]) => {
       ownerData[k] = v === "" ? null : v
     })
 
@@ -463,18 +463,18 @@ export default function PetsPage() {
                                 Edad:{" "}
                                 {Math.floor(
                                   (new Date().getTime() - new Date(pet.date_of_birth).getTime()) /
-                                    (1000 * 60 * 60 * 24 * 365),
+                                  (1000 * 60 * 60 * 24 * 365),
                                 )}{" "}
                                 años
                               </p>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
-                              <Button size="icon" variant="ghost" onClick={() => setEditingPet(pet)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <PawPrint className="h-8 w-8 text-gray-400" />
-                            </div>
+                            <Button size="icon" variant="ghost" onClick={() => setEditingPet(pet)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <PawPrint className="h-8 w-8 text-gray-400" />
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -640,11 +640,11 @@ export default function PetsPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2">
-                              <Button size="icon" variant="ghost" onClick={() => setEditingOwner(owner)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Users className="h-8 w-8 text-gray-400" />
-                            </div>
+                            <Button size="icon" variant="ghost" onClick={() => setEditingOwner(owner)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Users className="h-8 w-8 text-gray-400" />
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

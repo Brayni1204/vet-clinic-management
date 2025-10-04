@@ -42,7 +42,7 @@ import {
   User,
 } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/db"
 import { toast } from "sonner"
 
 interface Product {
@@ -145,8 +145,8 @@ export default function ClientPortalPage() {
   const handleCardNumberChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
     const formatted = numericValue.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-    setCardForm({...cardForm, cardNumber: formatted});
-    setCardErrors({...cardErrors, cardNumber: ''});
+    setCardForm({ ...cardForm, cardNumber: formatted });
+    setCardErrors({ ...cardErrors, cardNumber: '' });
   }
 
   const validateExpiryDate = (date: string) => {
@@ -168,8 +168,8 @@ export default function ClientPortalPage() {
 
   const handleCVVChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '').slice(0, 3);
-    setCardForm({...cardForm, cvv: numericValue});
-    setCardErrors({...cardErrors, cvv: ''});
+    setCardForm({ ...cardForm, cvv: numericValue });
+    setCardErrors({ ...cardErrors, cvv: '' });
   }
 
   const validateCardName = (name: string) => {
@@ -516,9 +516,9 @@ export default function ClientPortalPage() {
     }
 
     if (!clientUser) {
-        toast.warning("Debes iniciar sesión para finalizar tu compra.");
-        router.push("/login"); // Redirect to login page
-        return;
+      toast.warning("Debes iniciar sesión para finalizar tu compra.");
+      router.push("/login"); // Redirect to login page
+      return;
     }
 
     if (!checkoutForm.metodoPago) {
@@ -732,9 +732,9 @@ export default function ClientPortalPage() {
                           onClick={() => {
                             // Check if client is logged in before proceeding to checkout
                             if (!clientUser) {
-                                toast.warning("Debes iniciar sesión para finalizar tu compra.");
-                                router.push("/login"); // Redirect to login page
-                                return;
+                              toast.warning("Debes iniciar sesión para finalizar tu compra.");
+                              router.push("/login"); // Redirect to login page
+                              return;
                             }
                             setIsCartDialogOpen(false)
                             setIsCheckoutDialogOpen(true)
@@ -788,12 +788,12 @@ export default function ClientPortalPage() {
               <Dialog open={isAppointmentDialogOpen} onOpenChange={setIsAppointmentDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="lg" variant="secondary" onClick={() => {
-                      if (!clientUser) {
-                          toast.warning("Debes iniciar sesión para agendar una cita.");
-                          router.push("/login"); // Redirect to login page
-                          return;
-                      }
-                      setIsAppointmentDialogOpen(true); // Open the dialog if logged in
+                    if (!clientUser) {
+                      toast.warning("Debes iniciar sesión para agendar una cita.");
+                      router.push("/login"); // Redirect to login page
+                      return;
+                    }
+                    setIsAppointmentDialogOpen(true); // Open the dialog if logged in
                   }}>
                     <Calendar className="h-5 w-5 mr-2" />
                     Agendar Cita
@@ -809,7 +809,7 @@ export default function ClientPortalPage() {
                   <form onSubmit={handleAppointmentSubmit} className="space-y-4">
                     {/* Display client data if logged in, otherwise hide fields */}
                     {clientUser ? (
-                       <></>
+                      <></>
                     ) : (
                       <>
                         <div className="grid grid-cols-2 gap-4">
@@ -1097,12 +1097,12 @@ export default function ClientPortalPage() {
                       <li>• Plan de vacunación</li>
                     </ul>
                     <Button className="w-full" onClick={() => {
-                        if (!clientUser) {
-                            toast.warning("Debes iniciar sesión para agendar una cita.");
-                            router.push("/login"); // Redirect to login page
-                            return;
-                        }
-                        setIsAppointmentDialogOpen(true); // Open the dialog if logged in
+                      if (!clientUser) {
+                        toast.warning("Debes iniciar sesión para agendar una cita.");
+                        router.push("/login"); // Redirect to login page
+                        return;
+                      }
+                      setIsAppointmentDialogOpen(true); // Open the dialog if logged in
                     }}>Agendar Consulta</Button>
                   </div>
                 </CardContent>
@@ -1269,38 +1269,38 @@ export default function ClientPortalPage() {
           <form onSubmit={handleCheckout} className="space-y-4">
             {/* Display client data if logged in, otherwise hide fields */}
             {clientUser ? (
-               <></>
+              <></>
             ) : (
-                // This block should ideally not be rendered if clientUser is null,
-                // as the dialog won't open if clientUser is null due to the button check.
-                // Keeping it here for clarity, but the UI flow ensures it's not seen.
-                <>
-                    <div className="space-y-2">
-                        <Label htmlFor="nombre">Nombre Completo</Label>
-                        <Input
-                            id="nombre"
-                            value={checkoutForm.direccion} // Placeholder
-                            disabled
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={checkoutForm.metodoPago} // Placeholder
-                            disabled
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="telefono">Teléfono</Label>
-                        <Input
-                            id="telefono"
-                            value={checkoutForm.notas} // Placeholder
-                            disabled
-                        />
-                    </div>
-                </>
+              // This block should ideally not be rendered if clientUser is null,
+              // as the dialog won't open if clientUser is null due to the button check.
+              // Keeping it here for clarity, but the UI flow ensures it's not seen.
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="nombre">Nombre Completo</Label>
+                  <Input
+                    id="nombre"
+                    value={checkoutForm.direccion} // Placeholder
+                    disabled
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={checkoutForm.metodoPago} // Placeholder
+                    disabled
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telefono">Teléfono</Label>
+                  <Input
+                    id="telefono"
+                    value={checkoutForm.notas} // Placeholder
+                    disabled
+                  />
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
@@ -1728,7 +1728,7 @@ export default function ClientPortalPage() {
                 onChange={(e) => handleCardNumberChange(e.target.value)}
                 onBlur={() => {
                   const error = validateCardNumber(cardForm.cardNumber);
-                  setCardErrors({...cardErrors, cardNumber: error});
+                  setCardErrors({ ...cardErrors, cardNumber: error });
                 }}
                 maxLength={19}
                 inputMode="numeric"
@@ -1748,12 +1748,12 @@ export default function ClientPortalPage() {
                 placeholder="JUAN PEREZ"
                 value={cardForm.cardName}
                 onChange={(e) => {
-                  setCardForm({...cardForm, cardName: e.target.value});
-                  setCardErrors({...cardErrors, cardName: ''});
+                  setCardForm({ ...cardForm, cardName: e.target.value });
+                  setCardErrors({ ...cardErrors, cardName: '' });
                 }}
                 onBlur={() => {
                   const error = validateCardName(cardForm.cardName);
-                  setCardErrors({...cardErrors, cardName: error});
+                  setCardErrors({ ...cardErrors, cardName: error });
                 }}
                 className={`w-full ${cardErrors.cardName ? 'border-red-500' : ''}`}
               />
@@ -1772,12 +1772,12 @@ export default function ClientPortalPage() {
                   value={cardForm.expiryDate}
                   onChange={(e) => {
                     const formatted = formatExpiryDate(e.target.value);
-                    setCardForm({...cardForm, expiryDate: formatted});
-                    setCardErrors({...cardErrors, expiryDate: ''});
+                    setCardForm({ ...cardForm, expiryDate: formatted });
+                    setCardErrors({ ...cardErrors, expiryDate: '' });
                   }}
                   onBlur={() => {
                     const error = validateExpiryDate(cardForm.expiryDate);
-                    setCardErrors({...cardErrors, expiryDate: error});
+                    setCardErrors({ ...cardErrors, expiryDate: error });
                   }}
                   maxLength={5}
                   className={cardErrors.expiryDate ? 'border-red-500' : ''}
@@ -1797,7 +1797,7 @@ export default function ClientPortalPage() {
                   onChange={(e) => handleCVVChange(e.target.value)}
                   onBlur={() => {
                     const error = validateCVV(cardForm.cvv);
-                    setCardErrors({...cardErrors, cvv: error});
+                    setCardErrors({ ...cardErrors, cvv: error });
                   }}
                   maxLength={3}
                   inputMode="numeric"

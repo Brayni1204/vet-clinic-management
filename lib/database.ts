@@ -1,4 +1,4 @@
-import { supabase, handleSupabaseError } from "./supabase"
+import { supabase, handleSupabaseError } from "./db"
 
 // Database helper functions with proper error handling
 export class DatabaseService {

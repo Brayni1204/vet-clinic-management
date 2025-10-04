@@ -1,12 +1,12 @@
-// context/AppConfigContext.tsx
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { supabase } from '@/lib/db' // Asegúrate que la importación apunte a lib/db
 
 interface AppConfig {
   clinicName: string
 }
-
+// ... (el resto del archivo sigue igual que la última vez)
 const AppConfigContext = createContext<AppConfig | undefined>(undefined)
 
 export const AppConfigProvider = ({ children }: { children: ReactNode }) => {
@@ -14,21 +14,20 @@ export const AppConfigProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      try {
-        const response = await fetch('/api/config');
-        if (!response.ok) {
-          throw new Error('Failed to fetch config');
-        }
-        const data = await response.json();
-        setConfig({ clinicName: data.clinic_name || 'VetClinic' });
-      } catch (error) {
-        console.error('Error cargando configuración de la clínica:', error);
-        setConfig({ clinicName: 'VetClinic (Error)' });
-      }
-    };
+      const { data, error } = await supabase
+        .from('clinic_configuration')
+        .select('clinic_name')
 
-    fetchConfig();
-  }, []);
+      if (error || !data || data.length === 0) {
+        console.error('Error cargando configuración de la clínica:', error)
+        setConfig({ clinicName: 'VetClinic (Error)' })
+      } else {
+        setConfig({ clinicName: data[0].clinic_name })
+      }
+    }
+
+    fetchConfig()
+  }, [])
 
   return (
     <AppConfigContext.Provider value={config}>
